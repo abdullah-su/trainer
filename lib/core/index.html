@@ -90,7 +90,7 @@
 <body>
 	<div class="info">
 		<button id="btnDirection" onclick="reverseDirection()">Направление</button>
-		<input id="server-url" type="text" placeholder="http://127.0.0.1:8080" value="http://127.0.0.1:8080">
+		<input id="server-url" onchange="getCard()" type="text" placeholder="http://127.0.0.1:8080" value="http://127.0.0.1:8080">
 		<div class="rowStat">
 			<div id="statNew"></div>
 			<div id="statCurrent"></div>
