@@ -8,3 +8,9 @@
 https://www.rustore.ru/catalog/app/su.abdullah.trainer
 
 Только на базе клиент-сервера на Dart и Flutter
+
+## Использование
+
+Из папки lib/core :
+1. Запускаешь сервер "dart server.dart имя_базы_слов.csv"
+2. После подключаешься к нему клиентом client.html
