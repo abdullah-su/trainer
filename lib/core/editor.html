@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tree Editor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    input, button { margin: 5px; padding: 8px; font-size: 1em; }
+    button { cursor: pointer; }
+    #output { margin-top: 20px; padding: 10px; border: 1px solid #ddd; }
+    .node-item { padding: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tree Node Editor</h1>
+    <label>Path:</label>
+    <input type="text" id="path" placeholder="/chapter/subchapter">
+    <label>Word:</label>
+    <input type="text" id="word" placeholder="Word (optional)">
+    <label>Translation:</label>
+    <input type="text" id="translation" placeholder="Translation (optional)">
+    <div>
+      <button onclick="addNode()">Add Node</button>
+      <button onclick="editNode()">Edit Node</button>
+      <button onclick="deleteNode()">Delete Node</button>
+      <button onclick="getChildren()">Get Children</button>
+      <button onclick="getDescendants()">Get Descendants</button>
+    </div>
+    <div id="output">Results will be displayed here</div>
+  </div>
+
+  <script>
+    const apiUrl = 'http://localhost:8080';
+
+    async function addNode() {
+      const path = document.getElementById('path').value;
+      const word = document.getElementById('word').value;
+      const translation = document.getElementById('translation').value;
+
+      const response = await fetch(`${apiUrl}/node`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, word, translation })
+      });
+      const result = await response.json();
+      displayResult(result);
+    }
+
+    async function editNode() {
+      const path = document.getElementById('path').value;
+      const word = document.getElementById('word').value;
+      const translation = document.getElementById('translation').value;
+
+      const response = await fetch(`${apiUrl}/node`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, word, translation })
+      });
+      const result = await response.json();
+      displayResult(result);
+    }
+
+    async function deleteNode() {
+      const path = document.getElementById('path').value;
+
+      const response = await fetch(`${apiUrl}/node?path=${encodeURIComponent(path)}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json();
+      displayResult(result);
+    }
+
+    async function getChildren() {
+      const path = document.getElementById('path').value;
+
+      const response = await fetch(`${apiUrl}/node?path=${encodeURIComponent(path)}`);
+      const result = await response.json();
+      displayNodeList(result.children || []);
+    }
+
+    async function getDescendants() {
+      const path = document.getElementById('path').value;
+
+      const response = await fetch(`${apiUrl}/descendants?path=${encodeURIComponent(path)}`);
+      const descendants = await response.json();
+      displayNodeList(descendants);
+    }
+
+    function displayResult(result) {
+      document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+    }
+
+    function displayNodeList(nodes) {
+      const output = document.getElementById('output');
+      output.innerHTML = '';
+
+      if (nodes.length === 0) {
+        output.innerText = 'No nodes found';
+        return;
+      }
+
+      nodes.forEach(node => {
+        const nodeItem = document.createElement('div');
+        nodeItem.className = 'node-item';
+        nodeItem.innerText = `Path: ${node.path} | Word: ${node.word} | Translation: ${node.translation}`;
+        output.appendChild(nodeItem);
+      });
+    }
+  </script>
+</body>
+</html>

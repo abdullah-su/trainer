@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Качалочка 2.0 - Клиент</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+			margin: 0;
+			background-color: black;
+		}
+		.info {
+			display: flex;
+			flex-direction: column;
+		}
+		.card {
+			width: 300px;
+			padding: 20px;
+			border: 1px solid #ddd;
+			border-radius: 8px;
+			text-align: center;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		}
+		#server-url {
+			text-align: center;
+		}
+		.slider-container {
+			margin: 20px 0;
+		}
+		button {
+			padding: 10px 20px;
+			margin-top: 10px;
+			border: none;
+			border-radius: 4px;
+			background-color: #28a745;
+			color: white;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		button:hover {
+			background-color: #218838;
+		}
+		.rowStat {
+			display: flex;
+			flex-direction: row;
+			color: white;
+		}
+		#card-id {
+			color: gray;
+		}
+		#card-text-front, #card-text-back {
+			font-size: 22px;
+			color: white;
+		}
+		#card-text-back {
+			font-size: 32px;
+		}
+		#statNew, #statCurrent, #statNext, #statEnd {
+			padding: 5px 20px;
+			border: white 1px solid;
+		}
+		#statNew {
+			background-color: darkgreen;
+		}
+
+		#statCurrent {
+			background-color: darkblue;
+		}
+
+		#statNext {
+			background-color: darkred;
+		}
+
+		#statEnd {
+			background-color: black;
+		}
+		#answer-slider {
+			width: 100%;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="info">
+		<button id="btnDirection" onclick="reverseDirection()">Направление</button>
+		<input id="server-url" type="text" placeholder="http://127.0.0.1:8080" value="http://127.0.0.1:8080">
+		<div class="rowStat">
+			<div id="statNew"></div>
+			<div id="statCurrent"></div>
+			<div id="statNext"></div>
+			<div id="statEnd"></div>
+		</div>
+	</div>
+	<div class="card">
+		<h5 id="card-id">...</h5>
+		<p id="card-text-front">Текст карточки</p>
+		<p id="card-text-back">Текст карточки</p>
+		<button id="btnFlip" onclick="flipCard()">Переворот</button>
+
+		<div class="slider-container">
+			<input type="range" id="answer-slider" min="0.0" max="2.0" step="0.01" value="1.0" onchange="submitAnswer(this.value)">
+		</div>
+
+		<p id="result"></p>
+	</div>
+
+	<script>
+		let currentCard = null;
+		let direction = 'native';
+		let serverUrl = document.getElementById("server-url");
+		const cardId = document.getElementById("card-id");
+		const cardTextFront = document.getElementById("card-text-front");
+		const cardTextBack = document.getElementById("card-text-back");
+		const result = document.getElementById("result");
+		const answerSlider = document.getElementById("answer-slider");
+		const btnFlip = document.getElementById("btnFlip");
+		const statNew = document.getElementById("statNew");
+		const statCurrent = document.getElementById("statCurrent");
+		const statNext = document.getElementById("statNext");
+		const statEnd = document.getElementById("statEnd");
+		async function getCard() {
+			try {
+				const response = await fetch(serverUrl.value + '/get-card?direction=' + direction);
+				const data = await response.json();
+				currentCard = data;
+				cardId.textContent = data.id;
+				cardTextBack.style.display = 'none';
+				cardTextFront.textContent = data.front;
+				statNew.textContent = data.stat.new;
+				statCurrent.textContent = data.stat.current;
+				statNext.textContent = data.stat.next;
+				statEnd.textContent = data.stat.end;
+				result.textContent = '';
+				answerSlider.value = 1.0;
+				answerSlider.style.display = 'none';
+				btnFlip.style.display = 'inline-block';
+				btnFlip.style.backgroundColor = data.fromList;
+				
+			} catch (error) {
+				console.error("Ошибка при получении карточки:", error);
+				result.textContent = 'Ошибка при получении карточки';
+			}
+		}
+
+		function flipCard() {
+			if (currentCard) {
+				cardTextBack.textContent = currentCard.back;
+				cardTextBack.style.display = 'block';
+				answerSlider.style.display = 'inline-block';
+				btnFlip.style.display = 'none';
+			}
+		}
+
+		async function submitAnswer(answer) {
+			try {
+				// let answer = answerSlider.value;
+				const response = await fetch(serverUrl.value + '/answer', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({answer})
+				});
+				const data = await response.json();
+				result.textContent = `Ответ принят.Длительность: ${ data.duration }`;
+				getCard();  // Получить следующую карточку
+			} catch (error) {
+				console.error("Ошибка при отправке ответа:", error);
+				result.textContent = 'Ошибка при отправке ответа';
+			}
+		}
+
+		function reverseDirection() {
+			if (direction === 'native') {
+				direction = 'foreign';
+			} else {
+				direction = 'native';
+			}
+			getCard();
+		}
+
+		// Загрузка первой карточки при открытии страницы
+		getCard();
+	</script>
+
+</body>
+
+</html>
