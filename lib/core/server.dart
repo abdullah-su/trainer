@@ -92,11 +92,13 @@ Future<void> _handleAnswer(HttpRequest request) async {
   var content = await utf8.decoder.bind(request).join();
   var data = jsonDecode(content) as Map<String, dynamic>;
   var answer = double.parse(data['answer'] ?? '1.0');
-  print('Данные: $answer');
+  print('Ответ: $answer');
 
   deck.fixReverse();
   print('-Было:  ${toDurationString(card.duration)} / ${toDurationString(card.durationR)}');
-  deck.recalculate(card, deck.calculateCard(card, answer));
+  int newDuration = deck.calculateDuration(card, answer);
+  print(newDuration);
+  deck.recalculateCard(card, newDuration);
   print('-Стало: ${toDurationString(card.duration)} / ${toDurationString(card.durationR)}');
   deck.saveTimes("$file.pgs");
 

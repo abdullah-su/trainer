@@ -169,18 +169,10 @@ Card getCard() {
 	return Card(id: 'err', native: 'Массив list пуст', foreign: '-');
 }
 
-int calculateCard(Card card, double factor) {
-  var durCalculated;
-  var timeCalculated;
-  if (direction == 'native') {
-    durCalculated = card.duration;
-    timeCalculated = card.time;
-  } else {
-    durCalculated = card.durationR;
-    timeCalculated = card.timeR;
-  }
-  var adding = 1000;
-  var maxFactor = 1.5;
+int calculateDuration(Card card, double factor) {
+  double durCalculated = (direction == 'native') ? card.duration * 1.0 : card.durationR * 1.0;
+  int timeCalculated = (direction == 'native') ? card.time : card.timeR;
+  double maxFactor = 1.5;
   if (durCalculated >= 0) {
     if (reverseTime > timeCalculated) { // если времени прошло больше запланированного
       var memTime = (reverseTime - timeCalculated) + durCalculated; // сколько времени прошло
@@ -199,20 +191,21 @@ int calculateCard(Card card, double factor) {
       if (factor > 1) { // то если помню
       //
       } else { 
-        durCalculated = durCalculated * factor + adding;// >?????
+        durCalculated = durCalculated * factor;// >?????
       }
     }
   } else { // НОВАЯ КАРТА
     if (factor > 1) {
       durCalculated = pow(factor, maxLevel) + 300; // >?????
     } else {
-      durCalculated = factor * 300 + adding;
+      durCalculated = factor * 300;
     }
   }
   return durCalculated.round();
 }
 
-void recalculate(Card card, int newDuration) {
+void recalculateCard(Card card, int newDuration) {
+	newDuration += 1000;
   var rnd = Random();
   double mpx = rnd.nextDouble() * 0.06 + 0.97; // отклонение от точного
   if (direction == 'native') {
