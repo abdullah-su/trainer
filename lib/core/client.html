@@ -51,6 +51,7 @@
 			display: flex;
 			flex-direction: row;
 			color: white;
+			justify-content: center;
 		}
 		#card-id {
 			color: gray;
@@ -89,7 +90,11 @@
 
 <body>
 	<div class="info">
-		<button id="btnDirection" onclick="reverseDirection()">Направление</button>
+		<div class="btnsDirection">
+			<button id="btnAuto" onclick="reverseDirection('auto')">Авто</button>
+			<button id="btnNative" onclick="reverseDirection('native')">Родной</button>
+			<button id="btnForeign" onclick="reverseDirection('foreign')">Изучаемый</button>
+		</div>
 		<input id="server-url" onchange="getCard()" type="text" placeholder="http://127.0.0.1:8080" value="http://127.0.0.1:8080">
 		<div class="rowStat">
 			<div id="statNew"></div>
@@ -113,7 +118,7 @@
 
 	<script>
 		let currentCard = null;
-		let direction = 'native';
+		let direction = 'auto';
 		let serverUrl = document.getElementById("server-url");
 		const cardId = document.getElementById("card-id");
 		const cardTextFront = document.getElementById("card-text-front");
@@ -175,12 +180,8 @@
 			}
 		}
 
-		function reverseDirection() {
-			if (direction === 'native') {
-				direction = 'foreign';
-			} else {
-				direction = 'native';
-			}
+		function reverseDirection(dir) {
+			direction = dir;
 			getCard();
 		}
 

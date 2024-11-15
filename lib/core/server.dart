@@ -80,7 +80,10 @@ void _handleGetCard(HttpRequest request) {
     },
     'fromList': deck.fromList,
   };
-  print('Ответ: ${card.id}');
+  print('Ответ:');
+  print('id: ${response['id']}');
+  print('date: ${response['date']} (${toDurationString(response['date'])})');
+  print('stat: ${response['stat']}');
   request.response
     ..statusCode = HttpStatus.ok
     ..headers.contentType = ContentType.json
@@ -91,15 +94,15 @@ void _handleGetCard(HttpRequest request) {
 Future<void> _handleAnswer(HttpRequest request) async {
   var content = await utf8.decoder.bind(request).join();
   var data = jsonDecode(content) as Map<String, dynamic>;
-  var answer = double.parse(data['answer'] ?? '1.0');
+  double answer = double.parse(data['answer'] ?? '1.0');
   print('Ответ: $answer');
 
   deck.fixReverse();
-  print('-Было:  ${toDurationString(card.duration)} / ${toDurationString(card.durationR)}');
+  print('-Было:  ${toDurationString(card.duration)} (${card.duration}) / ${toDurationString(card.durationR)} (${card.durationR})');
   int newDuration = deck.calculateDuration(card, answer);
   print(newDuration);
-  deck.recalculateCard(card, newDuration);
-  print('-Стало: ${toDurationString(card.duration)} / ${toDurationString(card.durationR)}');
+  deck.recalculateCard(card, newDuration, answer);
+  print('-Стало:  ${toDurationString(card.duration)} (${card.duration}) / ${toDurationString(card.durationR)} (${card.durationR})');
   deck.saveTimes("$file.pgs");
 
   var response = {

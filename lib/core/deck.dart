@@ -30,20 +30,24 @@ void listsPrepare() {
   	sumNext = 0;
   	sumNew = 0;
     sumEnd = 0;
-	if (direction == 'native'){ // если направление Прямое
+    int duration;
+    int time;
+    
     for (Card c in list) {
+      duration = (direction == 'native') ? c.duration : c.durationR;
+      time = (direction == 'native') ? c.time : c.timeR;
       // вычищаем от выученных карточек
-      if (c.duration > maxDuration) {
+      if (duration > maxDuration) {
         sumEnd += 1; // считаем изученые / удалённые
         continue;
       }
       // разделяем на два списка Текущих и Будущих карточек
-      if (c.time <= dealTime) {
+      if (time <= dealTime) {
         currentList.add(c);
         sumCur += 1; // считаем текущие
       } else {
         nextList.add(c);
-        if (c.duration == -1) {
+        if (duration == -1) {
           sumNew += 1; // считаем новые
         } else {
           sumNext += 1; // считаем следующие
@@ -53,30 +57,6 @@ void listsPrepare() {
     // и сортируем эти 2 списка
     currentList.sort((b, a) => a.time.compareTo(b.time));
     nextList.sort((a, b) => a.time.compareTo(b.time));
-  } else { // если направление Обратное
-    for (Card c in list) {
-      // вычищаем от вычеркнутых или выученных карточек
-      if (c.durationR > maxDuration) {
-        sumEnd += 1; // считаем изученые / удалённые
-        continue;
-      }
-      // разделяем на два списка Текущих и Будущих карточек
-      if (c.timeR <= dealTime) {
-        currentList.add(c);
-        sumCur += 1; // считаем текущие
-      } else {
-        nextList.add(c);
-        if (c.durationR == -1) {
-          sumNew += 1; // считаем новые
-        } else {
-          sumNext += 1; // считаем следующие
-        }
-      }
-    }
-    // и сортируем эти 2 списка
-    currentList.sort((b, a) => a.timeR.compareTo(b.timeR));
-    nextList.sort((a, b) => a.timeR.compareTo(b.timeR));
-  }
 }
 void loadDeck(filepath){
 	all = [];
@@ -95,21 +75,6 @@ void goto(String path) {
   }
 }
 
-// void loadTimes_old(String filepath) {
-//   List<List<String>> rows = fileToArray(filepath);
-//   for (List<String> row in rows) {
-//     for (var card in list) {
-//       if (card.id == row[0]) { /////////////////////////// *1000 убрать после
-//         card.time = (double.parse(row[1]) * 1000).round();
-//         card.duration = (double.parse(row[2]) * 1000).round();
-//         card.timeR = (double.parse(row[3]) * 1000).round();
-//         card.durationR = (double.parse(row[4]) * 1000).round();
-//         break;
-//       }
-//     }
-//   }
-// }
-
 void loadTimes(String filepath) {
   List<List<String>> rows = fileToArray(filepath);
   for (List<String> row in rows) {
@@ -126,96 +91,102 @@ void loadTimes(String filepath) {
 }
 
 Card getCard() {
-  Card emptyCard = Card(id: 'err', native: 'ВСЁ ИЗУЧЕНО', foreign: '-');
+  if (direction == 'auto') {
+    direction = 'native';
+    listsPrepare();
+    int nativeSum = sumCur + sumNew;
+    direction = 'foreign';
+    listsPrepare();
+    int foreignSum = sumCur + sumNew;
+    Random rnd = Random();
+    int rndInt = rnd.nextInt(foreignSum + nativeSum);
+    if (rndInt < nativeSum) {
+      direction = 'native';
+    } else {
+      direction = 'foreign';
+    }
+  }
   listsPrepare();
-	if (direction == 'native'){ // если направление Прямое
-
-    // изучаем в первую очередь всё из Текущего списка
-    if (currentList.length != 0) {
-      fromList = 'darkblue';
-      return currentList[0];
-    } // а после из Следующего
-    else {
-      for (Card nextCard in nextList) {
-        if (nextCard.duration < 0) {
-          fromList = 'darkgreen';
-          return nextCard;
-        }
-      }
-      if (nextList.length != 0) {
-        fromList = 'darkred';
-        return nextList[0];
-      } else {
-        fromList = 'black';
-        return emptyCard; // ВСЁ ИЗУЧЕНО
+  // изучаем в первую очередь всё из Текущего списка
+  if (currentList.length != 0) {
+    fromList = 'darkblue';
+    return currentList[0]; // вернуть из Текущего списка
+  } // а после из Будующего (Ново-следующего)
+  else {
+    int duration;
+    for (Card nextCard in nextList) {
+      duration = (direction == 'native') ? nextCard.duration : nextCard.durationR;
+      if (duration < 0) {
+        fromList = 'darkgreen';
+        return nextCard;  // вернуть из Нового списка
       }
     }
-  } else { // если направление Обратное
-    if (currentList.length != 0) {
-      return currentList[0];
+    // Новый список и Текущий закончился
+    if (nextList.length != 0) {
+      fromList = 'darkred';
+      return nextList[0]; // вернуть первую из Следующего списка
     } else {
-      for (Card nextCard in nextList) {
-        if (nextCard.durationR < 0) {
-          return nextCard;
-        }
-      }
-      if (nextList.length != 0) {
-        return nextList[0];
-      } else {
-        return emptyCard; // ВСЁ ИЗУЧЕНО
-      }
+      fromList = 'black';
+      return Card(id: 'err', native: 'ВСЁ ИЗУЧЕНО', foreign: '-'); // ВСЁ ИЗУЧЕНО
     }
   }
 	return Card(id: 'err', native: 'Массив list пуст', foreign: '-');
 }
 
 int calculateDuration(Card card, double factor) {
-  double durCalculated = (direction == 'native') ? card.duration * 1.0 : card.durationR * 1.0;
-  int timeCalculated = (direction == 'native') ? card.time : card.timeR;
+  double duration = (direction == 'native') ? card.duration * 1.0 : card.durationR * 1.0;
+  int time = (direction == 'native') ? card.time : card.timeR;
   double maxFactor = 1.5;
-  if (durCalculated >= 0) {
-    if (reverseTime > timeCalculated) { // если времени прошло больше запланированного
-      var memTime = (reverseTime - timeCalculated) + durCalculated; // сколько времени прошло
+  if (duration >= 0) {
+    if (reverseTime > time) { // если времени прошло больше запланированного
+      double memTime = (reverseTime - time) + duration; // сколько времени прошло
       if (factor > 1) { // то если помню
         if (factor > 1.5) { // хорошо помню
           factor = (factor - 1.5) * 2 * (maxFactor - 1) + 1;
-          durCalculated = memTime * factor;
+          duration = memTime * factor;
         } else { // плоховато помню
           factor = (factor - 1.5) * 2 * (maxFactor - 1) + 1;
-          durCalculated = memTime * factor;
+          duration = memTime * factor;
         }
       } else { // не помню
-        durCalculated = memTime * factor;
+        duration = memTime * factor;
       }
     } else { // если показано вовремя или раньше положенного
+      int memTime = time - reverseTime; // сколько времени прошло
       if (factor > 1) { // то если помню
-      //
+        duration = memTime * factor;
       } else { 
-        durCalculated = durCalculated * factor;// >?????
+        duration *= factor;  // >?????
       }
     }
   } else { // НОВАЯ КАРТА
     if (factor > 1) {
-      durCalculated = pow(factor, maxLevel) + 300; // >?????
+      duration = pow(factor, maxLevel) + 300; // >?????
     } else {
-      durCalculated = factor * 300;
+      duration = factor * 300;
     }
   }
-  return durCalculated.round();
+  return duration.round();
 }
 
-void recalculateCard(Card card, int newDuration) {
+void recalculateCard(Card card, int newDuration, double answer) {
 	newDuration += 1000;
-  var rnd = Random();
+  Random rnd = Random();
   double mpx = rnd.nextDouble() * 0.06 + 0.97; // отклонение от точного
   if (direction == 'native') {
     card.duration = (newDuration * mpx).round();
     card.time = DateTime.now().millisecondsSinceEpoch + card.duration;
-    if (card.durationR != -1) card.timeR = DateTime.now().millisecondsSinceEpoch + card.durationR;
+    if (card.durationR != -1) {
+      card.durationR = (answer < 1) ? card.durationR ~/ (2 - answer) : card.durationR;
+      card.timeR = DateTime.now().millisecondsSinceEpoch + card.durationR;
+    }
   } else {
     card.durationR = (newDuration * mpx).round();
     card.timeR = DateTime.now().millisecondsSinceEpoch + card.durationR;
-    if (card.duration != -1) card.time = DateTime.now().millisecondsSinceEpoch + card.duration;
+    if (card.duration != -1) {
+      card.duration = (answer < 1) ? card.duration ~/ (2 - answer) : card.duration;
+      card.time = DateTime.now().millisecondsSinceEpoch + card.duration;
+    }
   }
 }
 
